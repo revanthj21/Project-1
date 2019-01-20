@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="https://canvasjs.com/assets/script/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="https://canvasjs.com/assets/script/jquery.canvasjs.min.js"></script>
+</head>
+<body>
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+<h1>revanth weather forecasrt</h1>
+<button id="button" onclick="historical()">HISTORICAL</button>
+<p id="reva"></p>
+<div id="chartContainer" style="height: 370px; max-width: 920px; margin: 0px auto;"></div>
+
+<script>
+   document.getElementById('button').addEventListener('click',historical);
+    function historical(){
+        var h=new XMLHttpRequest({mozSystem: true});
+        h.open('GET','http://127.0.0.1:8000/weather/historical/',true);
+        h.onload=function(){
+            if(this.status == 200){
+               var u=JSON.parse(this.responseText);
+
+                var output='';
+                for(var i in u){
+                   output +='DATE :'+u[i].DATE  ;
+
+
+                 }
+
+
+            }
+       }
+      h.send();
+
+    }
+</script>
+<input type="text" id="myDate" value=""><button id="btn2" onclick="myDate()">submit</button>
+<p id="r2"></p>
+<p id="r3"></p>
+ <script>
+  document.getElementById('btn2').addEventListener('click',myDate);
+  function myDate() {
+    var x = document.getElementById("myDate").value;
+
+        var h=new XMLHttpRequest({mozSystem: true});
+        h.open('GET','http://127.0.0.1:8000/weather/historical/',true);
+        h.onload=function(){
+            if(this.status == 200){
+               var u=JSON.parse(this.responseText);
+
+                var output1='';
+                var output2='';
+                for(var i in u){
+                    if(x === u[i].DATE){
+                        output1 +='TMIN :'+u[i].TMIN  ;
+                        output2 +='TMAX:'+u[i].TMAX;
+
+
+                      }
+
+
+                }
+                document.getElementById('r2').innerHTML=output1;
+                document.getElementById('r3').innerHTML=output2;
+              }
+
+            }
+
+
+    h.send();
+
+    }
+
+
+</script>
+
+<p id="r4"></p>
+<p id="r5"></p>
+<p id="r6"></p>
+<canvas id="linechart" width="400" height="400"></canvas>
+<input type="text" id="Date" value=""><button id="btn3" onclick="plot()">submit</button>
+ <script type="text/javascript">
+  document.getElementById('btn3').addEventListener('click',plot);
+  function plot() {
+    var x = document.getElementById("Date").value;
+    var ur='http://127.0.0.1:8000/weather/forecast/';
+    var url=ur+x;
+
+        var h=new XMLHttpRequest({mozSystem: true});
+        h.open('GET',url,true);
+        var date=[];
+        var tmax=[];
+        var tmin=[];
+        h.onload=function(){
+
+
+            if(this.status == 200){
+                var u=JSON.parse(this.responseText);
+
+                var output='';
+                for(var i in u){
+                   tmax [i]='TMAX:'+u[i].TMAX  ;
+                   tmin [i]='TMIN:'+u[i].TMIN;
+
+
+
+
+                 }
+
+             document.getElementById('r4').innerHTML=tmax;
+             document.getElementById('r5').innerHTML=tmin;
+            window.onload = function () {
+            var chart = new CanvasJS.Chart("chartContainer", {
+                animationEnabled: true,
+	            theme: "light2",
+	        title:{
+		            text: "Simple Line Chart"
+	                },
+	        axisY:{
+		            includeZero: false
+	               },
+	        data: [{
+		        type: "line",
+		        dataPoints: [
+			            { y: tmin[1] },
+			            { y: tmin[2]},
+			            { y: tmin[3] },
+			            { y: tmin[4] },
+			            { y: tmin[5]},
+			            { y: tmin[6] },
+
+		            ]
+	        }]
+         });
+            chart.render();
+
+        }
+    }
+    h.send();
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+ </script>
+ <script type="text/javascript">
+    angular.module('myApp', [])
+            .controller('HomeCtrl', function($scope, $http) {
+        $scope.list_dates = function () {
+        console.log($scope.contact);
+        $http.get("/historical").success(function (response) {
+            console.log(response);
+            $scope.dates = response;
+        });
+        };
+        $scope.clear = function () {
+        $scope.dates = null;
+    };
+
+     $scope.get_weather_forecast = function () {
+        $http.get("/forecast/" + $scope.forecastDate).success(function (response) {
+            $scope.forecasted_report = response;
+            $scope.local_forecast_dates = [];
+            $scope.local_forecastedTMAX = [];
+            $scope.local_forecastedTMIN = [];
+            angular.forEach($scope.forecasted_report, function (value, key) {
+                $scope.local_forecast_dates.push(value.DATE);
+                $scope.local_forecastedTMAX.push(parseInt(value.TMAX));
+                $scope.local_forecastedTMIN.push(parseInt(value.TMIN));
+            });
+
+            Highcharts.chart('container', {
+                title:{
+                    text: "WEATHER FORECAST"
+                },
+                xAxis: {
+                    categories: $scope.local_forecast_dates
+                },
+                yAxis: {
+                    title: {
+                        text: 'TEMPERATURE (\xB0C)'
+                    },
+                    plotLines: [{
+                        value: 0,
+                        width: 2,
+                        color: ' #ca0f21'
+                    }]
+                },
+                series: [
+                    {
+                        name: 'TMAX',
+                        data: $scope.local_forecastedTMAX
+                    },
+                    {
+                        name: 'TMIN',
+                        data: $scope.local_forecastedTMIN
+                    }
+                ]
+            });
+
+
+        });
+    };
+
+    $scope.get_weather_forecast_from_third_party = function () {
+
+        $http.get("https://query.yahooapis.com/v1/public/yql?q=select+*+from+weather.forecast+where+woeid+in+(select+woeid+from+geo.places(1)+where+text%3d%22nome%2c+ak%22)&format=json").success(function (response) {
+            $scope.third_party_forecasted_report = response.query.results.channel.item.forecast;
+            $scope.forecast_dates = [];
+                $scope.forecastedTMAX = [];
+                $scope.forecastedTMIN = [];
+                angular.forEach($scope.third_party_forecasted_report, function (value, key) {
+                    $scope.forecast_dates.push(value.date);
+                    $scope.forecastedTMAX.push(parseInt(value.high));
+                    $scope.forecastedTMIN.push(parseInt(value.low));
+                });
+
+                Highcharts.chart('container1', {
+                        title:{
+                        text:"Yahoo forecast of Cincinnati"
+                        },
+                    xAxis: {
+                        categories: $scope.forecast_dates
+                    },
+                    yAxis: {
+                        title: {
+                            text: 'Temperature (\xB0C)'
+                        },
+                        plotLines: [{
+                            value: 0,
+                            width: 2,
+                            color: ' #ca0f21'
+                        }]
+                    },
+                    series: [
+                        {
+                            name: 'TMAX',
+                            data: $scope.forecastedTMAX
+                        },
+                        {
+                            name: 'TMIN',
+                            data: $scope.forecastedTMIN
+                        }
+                    ]
+                });
+
+            }
+        );
+    };
+        });
+</script>
+
+
+
+
+
+
+
+
+</body>
+</html>
+
